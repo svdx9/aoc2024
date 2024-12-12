@@ -102,15 +102,9 @@ type grid struct {
 func (g *grid) onGrid(pos vec) bool {
 	return pos.x >= 0 && pos.x < g.sz.x && pos.y >= 0 && pos.y < g.sz.y
 }
-func (g *grid) offGrid(pos vec) bool {
-	return pos.x < 0 || pos.x >= g.sz.x || pos.y < 0 || pos.y >= g.sz.y
-}
 
 func (g *grid) isObs(pos vec) bool {
-	if g.rows[pos.y][pos.x] == obstacleChar {
-		return true
-	}
-	return false
+	return g.rows[pos.y][pos.x] == obstacleChar
 }
 
 type path struct {
@@ -140,12 +134,6 @@ func newPath() *path {
 	return &path{
 		p: make(map[vec]direction),
 	}
-}
-
-type simRes struct {
-	loop  bool
-	moves int
-	ok    bool
 }
 
 func runSimulation(g *grid, p *path) bool {
