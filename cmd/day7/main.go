@@ -22,24 +22,24 @@ func (p puzzle) sum() int {
 	return total
 }
 
-func solve(answer int, values []int, operator string) (string, error) {
-	fmt.Printf("TRY: %d %+v %s\n", answer, values, operator)
+func solve(answer int, values []int, operator string, running int) (string, int, error) {
+	fmt.Printf("TRY: %d %+v %s r:%d\n", answer, values, operator, running)
 	// start
 	switch len(values) {
 	case 0:
 		// should never get here
 		if answer == 0 {
-			return operator, nil
+			return operator, running, nil
 		}
-		return operator, fmt.Errorf("cannot solve, no values non-zero answer")
+		return operator, running, fmt.Errorf("cannot solve, no values non-zero answer")
 	case 1:
 		// if the answer equals the last value, means we have a correct
 		// solution
 		fmt.Printf("case1: %d %+v %s\n", answer, values, operator)
 		if answer == values[0] {
-			return operator, nil
+			return operator, running, nil
 		}
-		return operator, fmt.Errorf("cannot solve, no values non-zero answer")
+		return operator, running, fmt.Errorf("cannot solve, no values non-zero answer")
 	default:
 		// do another calculation
 	}
@@ -49,19 +49,22 @@ func solve(answer int, values []int, operator string) (string, error) {
 	// try multiply
 	if answer%last == 0 {
 		fmt.Printf("%d %d\n", answer, last)
-		if operator, err := solve(answer/last, values, operator+fmt.Sprintf("%d*", last)); err == nil {
+		if operator, running, err := solve(answer/last, values, operator+fmt.Sprintf("%d*", last), running*last); err == nil {
 			// this worked
-			return operator, err
+			fmt.Printf("running: * %d\n", running)
+			return operator, running, err
 		}
 	}
 	// now try addition
-	if operator, err := solve(answer-last, values, operator+fmt.Sprintf("%d+", last)); err == nil {
+	if operator, running, err := solve(answer-last, values, operator+fmt.Sprintf("%d+", last), running+last); err == nil {
 		// this worked
-		return operator, err
+		fmt.Printf("running: + %d\n", running)
+		return operator, running, err
 	}
-
-	return operator, fmt.Errorf("eh?")
+	fmt.Printf("no worky %+v %d\n", values, running)
+	return operator, running, fmt.Errorf("eh?")
 }
+
 func (p *puzzle) solve() bool {
 	// test for edge case on start
 	if len(p.values) == 0 {
@@ -77,7 +80,7 @@ func (p *puzzle) solve() bool {
 	values := make([]int, len(p.values))
 	copy(values, p.values)
 
-	operations, err := solve(p.answer, values, "")
+	operations, _, err := solve(p.answer, values, "", 0)
 	if err != nil {
 		fmt.Printf("error:%s\n", err)
 		return false
@@ -85,53 +88,6 @@ func (p *puzzle) solve() bool {
 	fmt.Printf("X; res: %d %s %+v\n", p.answer, operations, p.values)
 	return true
 }
-
-// func (p *puzzle) old() (int, bool) {
-// 	if len(p.values) < 2 {
-// 		panic("not enough values")
-// 	}
-// 	operators := ""
-// 	for i := len(p.values) - 1; i > 0; i-- {
-// 		// try multiply first
-// 		// fmt.Printf("%d %d\n", p.values[i-1], p.values[i])
-// 		if p.answer%p.values[i] == 0 {
-// 			operators = operators + "*"
-// 			p.answer = p.answer / p.values[i]
-// 		} else {
-// 			operators = operators + "+"
-// 			p.answer = p.answer - p.values[i]
-// 		}
-// 		if p.answer < 0 {
-// 			fmt.Printf("<0: %s:%d:%d: %s\n", p.orig, p.answer, i, operators)
-// 			return 0, false
-// 		}
-// 	}
-// 	if p.answer != p.values[0] {
-// 		// not solveable
-// 		return 0, false
-// 	}
-// 	total := 0
-
-// 	for idx, oper := range operators {
-// 		if idx == 0 {
-// 			if oper == '*' {
-// 				total = p.values[0] * p.values[1]
-// 			} else {
-// 				total = p.values[0] + p.values[1]
-// 			}
-// 		} else {
-// 			if oper == '*' {
-// 				total *= p.values[idx+1]
-// 			} else {
-// 				total += p.values[idx+1]
-// 			}
-// 		}
-// 		// fmt.Printf("%c:%d:%d:%d\n", oper, a, b, total)
-
-// 	}
-// 	return total, true
-
-// }
 
 func getFileContents() (*os.File, error) {
 	filename := os.Getenv("INPUT")
