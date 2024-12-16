@@ -22,47 +22,60 @@ func (p puzzle) sum() int {
 	return total
 }
 
-func solve(answer int, values []int, operator string, running int) (string, int, error) {
-	fmt.Printf("TRY: %d %+v %s r:%d\n", answer, values, operator, running)
+func solve(answer int, values []int, operator string) (string, error) {
+	// fmt.Printf("TRY: %d %+v %s\n", answer, values, operator)
 	// start
 	switch len(values) {
 	case 0:
 		// should never get here
 		if answer == 0 {
-			return operator, running, nil
+			return operator, nil
 		}
-		return operator, running, fmt.Errorf("cannot solve, no values non-zero answer")
+		return operator, fmt.Errorf("cannot solve, no values non-zero answer")
 	case 1:
 		// if the answer equals the last value, means we have a correct
 		// solution
-		fmt.Printf("case1: %d %+v %s\n", answer, values, operator)
 		if answer == values[0] {
-			return operator, running, nil
+			return operator, nil
 		}
-		return operator, running, fmt.Errorf("cannot solve, no values non-zero answer")
+		return operator, fmt.Errorf("cannot solve, no values non-zero answer")
 	default:
 		// do another calculation
 	}
 	// pop last value
 	last, values := values[len(values)-1], values[:len(values)-1]
-
+	fmt.Printf("XX: %d:%d\n", answer, last)
 	// try multiply
 	if answer%last == 0 {
 		fmt.Printf("%d %d\n", answer, last)
-		if operator, running, err := solve(answer/last, values, operator+fmt.Sprintf("%d*", last), running*last); err == nil {
+		if operator, err := solve(answer/last, values, fmt.Sprintf("*%d", last)+operator); err == nil {
 			// this worked
-			fmt.Printf("running: * %d\n", running)
-			return operator, running, err
+			return operator, err
 		}
 	}
 	// now try addition
-	if operator, running, err := solve(answer-last, values, operator+fmt.Sprintf("%d+", last), running+last); err == nil {
+	if operator, err := solve(answer-last, values, fmt.Sprintf("+%d", last)+operator); err == nil {
 		// this worked
-		fmt.Printf("running: + %d\n", running)
-		return operator, running, err
+		return operator, err
 	}
-	fmt.Printf("no worky %+v %d\n", values, running)
-	return operator, running, fmt.Errorf("eh?")
+	// now try whacky concat operator, strip last from answer:
+	if answer != last && answer > 0 {
+		answerAsStr := strconv.Itoa(answer)
+		lastAsStr := strconv.Itoa(last)
+		if strings.HasSuffix(answerAsStr, lastAsStr) {
+			// last is at end of answer, so strip it off
+			answerAsStr := answerAsStr[:len(answerAsStr)-len(lastAsStr)]
+			answerTrunc, err := strconv.Atoi(answerAsStr)
+			if err != nil {
+				panic(fmt.Sprintf("this should never happen: %s : '%d' '%s' '%s'", err, answer, answerAsStr, lastAsStr))
+			}
+			if operator, err := solve(answerTrunc, values, fmt.Sprintf("||%d", last)+operator); err == nil {
+				// this worked
+				return operator, err
+			}
+		}
+	}
+	return "", fmt.Errorf("no solution")
 }
 
 func (p *puzzle) solve() bool {
@@ -80,12 +93,12 @@ func (p *puzzle) solve() bool {
 	values := make([]int, len(p.values))
 	copy(values, p.values)
 
-	operations, _, err := solve(p.answer, values, "", 0)
+	operations, err := solve(p.answer, values, "")
 	if err != nil {
 		fmt.Printf("error:%s\n", err)
 		return false
 	}
-	fmt.Printf("X; res: %d %s %+v\n", p.answer, operations, p.values)
+	fmt.Printf("res: %d%s=%d %+v\n", p.values[0], operations, p.answer, p.values)
 	return true
 }
 
